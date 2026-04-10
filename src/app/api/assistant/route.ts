@@ -19,6 +19,17 @@ type ProviderConfig = {
   headers: Record<string, string>;
 };
 
+type UpstreamJsonResponse = {
+  error?: {
+    message?: string;
+    code?: string;
+  };
+  choices?: Array<{
+    message?: { content?: string | null };
+    delta?: { content?: string | null };
+  }>;
+};
+
 const SYSTEM_PROMPT = `You are DomestiQ AI, a home cleaning assistant inside a mobile app.
 Give concise, practical cleaning guidance.
 Prioritize fast, actionable steps over long explanations.
@@ -160,6 +171,32 @@ function extractContentFromSseLine(line: string): string {
   }
 }
 
+function extractContentFromJsonPayload(payload: UpstreamJsonResponse): string {
+  return payload.choices?.[0]?.message?.content ?? payload.choices?.[0]?.delta?.content ?? "";
+}
+
+function normalizeUpstreamError(status: number, errorText: string) {
+  const trimmed = errorText.slice(0, 500);
+
+  if (status === 401) {
+    return "The assistant provider rejected the API credentials. Update the active provider token or API key.";
+  }
+
+  if (status === 403 && /models:read|permission|forbidden/i.test(trimmed)) {
+    return "The GitHub Models token is missing the required models:read permission.";
+  }
+
+  if (status === 404 && /deployment|model/i.test(trimmed)) {
+    return "The configured AI model or deployment could not be found. Check the selected model name and deployment settings.";
+  }
+
+  if (status === 429 || /quota|insufficient_quota|rate limit/i.test(trimmed)) {
+    return "The connected AI provider has hit a quota or rate limit.";
+  }
+
+  return "The assistant request failed.";
+}
+
 function createStreamFromUpstream(upstream: Response) {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -255,11 +292,35 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         {
-          error: "The assistant request failed.",
+          error: normalizeUpstreamError(upstream.status, errorText),
           details: errorText.slice(0, 500),
         },
         { status: 502 },
       );
+    }
+
+    const contentType = upstream.headers.get("content-type") ?? "";
+
+    if (contentType.includes("application/json")) {
+      const json = (await upstream.json()) as UpstreamJsonResponse;
+      const content = extractContentFromJsonPayload(json);
+
+      if (!content.trim()) {
+        return NextResponse.json(
+          {
+            error: "The assistant returned an empty response.",
+            details: json.error?.message ?? "Upstream JSON response did not contain assistant content.",
+          },
+          { status: 502 },
+        );
+      }
+
+      return new Response(content, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-store",
+        },
+      });
     }
 
     return new Response(createStreamFromUpstream(upstream), {

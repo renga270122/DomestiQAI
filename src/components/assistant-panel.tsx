@@ -72,6 +72,18 @@ function formatAssistantError(message: string) {
     return "The connected AI key has no remaining quota right now. Replace or recharge the provider key to restore live responses.";
   }
 
+  if (/rejected the API credentials|401/i.test(message)) {
+    return "The connected AI credentials were rejected. Update the active provider API key or token in the deployment settings.";
+  }
+
+  if (/models:read/i.test(message)) {
+    return "The GitHub Models token needs the models:read permission before AI chat can work.";
+  }
+
+  if (/model or deployment could not be found/i.test(message)) {
+    return "The configured AI model or Azure deployment name is invalid. Update the deployment settings and redeploy.";
+  }
+
   if (message.includes("Unable to reach the assistant provider")) {
     return "The AI provider is temporarily unreachable. Try again in a minute.";
   }
@@ -154,8 +166,8 @@ export function AssistantPanel() {
       });
 
       if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? "Assistant request failed.");
+        const payload = (await response.json()) as { error?: string; details?: string };
+        throw new Error(payload.details ? `${payload.error ?? "Assistant request failed."} ${payload.details}` : (payload.error ?? "Assistant request failed."));
       }
 
       if (!response.body) {
