@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const items = [
-  { href: "/home", label: "Home", icon: "Home" },
+  { href: "/", label: "Home", icon: "Home" },
   { href: "/dashboard", label: "Tasks", icon: "Tasks" },
   { href: "/assistant", label: "AI", icon: "AI" },
 ];
@@ -12,7 +12,7 @@ const items = [
 export function AppNav() {
   const pathname = usePathname();
 
-  if (pathname === "/login") {
+  if (pathname === "/login" || pathname === "/") {
     return null;
   }
 
