@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { getDailyInspiration, type DailyInspiration } from "@/lib/daily-inspiration";
 import {
   readRemindersFromStorage,
   readTasksFromStorage,
@@ -13,6 +14,12 @@ import styles from "./mvp-dashboard.module.css";
 
 const quoteStorageKey = "domestiq-ai-quote-favorites";
 
+type ProgressSnapshot = {
+  streakCount: number;
+  bestStreak: number;
+  lastCompletedDate: string | null;
+};
+
 const roomCards = [
   { label: "Home", icon: "⌂", accent: "teal" },
   { label: "Balcony", icon: "▦", accent: "green" },
@@ -21,47 +28,6 @@ const roomCards = [
 ];
 
 const weeklyBars = [28, 52, 68, 44, 34, 58, 82];
-
-const mindfulQuotes = [
-  {
-    id: "clear-mind",
-    text: "A clean space clears the mind.",
-    note: "Today’s inspiration",
-  },
-  {
-    id: "prayer-for-peace",
-    text: "Every sweep is a prayer for peace.",
-    note: "Mindful cleaning moment",
-  },
-  {
-    id: "order-calm",
-    text: "Order outside invites calm inside.",
-    note: "Gentle reminder",
-  },
-  {
-    id: "inner-rhythm",
-    text: "Your home reflects your inner rhythm.",
-    note: "Sacred space note",
-  },
-  {
-    id: "small-serenity",
-    text: "Small chores, big serenity.",
-    note: "Quiet progress",
-  },
-  {
-    id: "reset-energy",
-    text: "Reset your space, reset your energy.",
-    note: "Daily reset",
-  },
-];
-
-function getDayOfYear(date: Date) {
-  const start = new Date(date.getFullYear(), 0, 0);
-  const diff = date.getTime() - start.getTime();
-  const oneDay = 1000 * 60 * 60 * 24;
-
-  return Math.floor(diff / oneDay);
-}
 
 function readFavoriteQuotes() {
   if (typeof window === "undefined") {
@@ -95,6 +61,31 @@ function readAuthProfileName() {
   }
 }
 
+function readProgressSnapshot(): ProgressSnapshot {
+  if (typeof window === "undefined") {
+    return { streakCount: 0, bestStreak: 0, lastCompletedDate: null };
+  }
+
+  try {
+    const saved = window.localStorage.getItem(storageKeys.progress);
+    return saved
+      ? (JSON.parse(saved) as ProgressSnapshot)
+      : { streakCount: 0, bestStreak: 0, lastCompletedDate: null };
+  } catch {
+    return { streakCount: 0, bestStreak: 0, lastCompletedDate: null };
+  }
+}
+
+function formatDateKey(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
+function getPreviousDateKey(dateKey: string) {
+  const date = new Date(`${dateKey}T00:00:00`);
+  date.setDate(date.getDate() - 1);
+  return formatDateKey(date);
+}
+
 function buildDashboardInsights(tasks: Task[], reminders: Reminder[]) {
   const openTasks = tasks.filter((task) => !task.completed);
   const activeReminders = reminders.filter((reminder) => reminder.enabled);
@@ -117,6 +108,9 @@ export function MvpDashboard() {
   const [favoriteQuotes, setFavoriteQuotes] = useState<string[]>(readFavoriteQuotes);
   const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const [displayName] = useState(readAuthProfileName);
+  const [progressSnapshot, setProgressSnapshot] = useState<ProgressSnapshot>(readProgressSnapshot);
+  const [dailyInspiration, setDailyInspiration] = useState<DailyInspiration>(getDailyInspiration);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -135,8 +129,39 @@ export function MvpDashboard() {
     window.localStorage.setItem(quoteStorageKey, JSON.stringify(favoriteQuotes));
   }, [favoriteQuotes]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDailyInspiration() {
+      try {
+        const response = await fetch("/api/daily-inspiration", { cache: "no-store" });
+
+        if (!response.ok) {
+          throw new Error("Failed to load daily inspiration");
+        }
+
+        const data = (await response.json()) as DailyInspiration;
+
+        if (isMounted) {
+          setDailyInspiration(data);
+        }
+      } catch {
+        if (isMounted) {
+          setDailyInspiration(getDailyInspiration());
+        }
+      }
+    }
+
+    void loadDailyInspiration();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const completedCount = tasks.filter((task) => task.completed).length;
   const completionRate = tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
+  const allTasksCompleted = tasks.length > 0 && completedCount === tasks.length;
 
   useEffect(() => {
     if (!completionMessage) {
@@ -147,6 +172,16 @@ export function MvpDashboard() {
 
     return () => window.clearTimeout(timer);
   }, [completionMessage]);
+
+  useEffect(() => {
+    if (!showCelebration) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setShowCelebration(false), 2200);
+
+    return () => window.clearTimeout(timer);
+  }, [showCelebration]);
 
   if (!isHydrated) {
     return (
@@ -166,13 +201,34 @@ export function MvpDashboard() {
   const todayTasks = tasks.slice(0, 4);
   const activeSuggestion = reminders.find((reminder) => reminder.enabled)?.label ?? "Water the garden";
   const insights = buildDashboardInsights(tasks, reminders);
-  const quoteIndex = (getDayOfYear(new Date()) + completedCount) % mindfulQuotes.length;
-  const currentQuote = mindfulQuotes[quoteIndex];
-  const isFavoriteQuote = favoriteQuotes.includes(currentQuote.id);
+  const isFavoriteQuote = favoriteQuotes.includes(dailyInspiration.id);
+
+  function persistProgress(snapshot: ProgressSnapshot) {
+    setProgressSnapshot(snapshot);
+    window.localStorage.setItem(storageKeys.progress, JSON.stringify(snapshot));
+  }
+
+  function updateStreakIfNeeded() {
+    const todayKey = formatDateKey();
+
+    if (progressSnapshot.lastCompletedDate === todayKey) {
+      return;
+    }
+
+    const nextStreak = progressSnapshot.lastCompletedDate === getPreviousDateKey(todayKey)
+      ? progressSnapshot.streakCount + 1
+      : 1;
+
+    persistProgress({
+      streakCount: nextStreak,
+      bestStreak: Math.max(progressSnapshot.bestStreak, nextStreak),
+      lastCompletedDate: todayKey,
+    });
+  }
 
   function toggleTask(taskId: string) {
-    setTasks((current) =>
-      current.map((task) => {
+    setTasks((current) => {
+      const nextTasks = current.map((task) => {
         if (task.id !== taskId) {
           return task;
         }
@@ -184,20 +240,31 @@ export function MvpDashboard() {
         }
 
         return { ...task, completed: nextCompleted };
-      }),
-    );
+      });
+
+      const nextCompletedCount = nextTasks.filter((task) => task.completed).length;
+      const nextAllCompleted = nextTasks.length > 0 && nextCompletedCount === nextTasks.length;
+
+      if (nextAllCompleted) {
+        updateStreakIfNeeded();
+        setShowCelebration(true);
+        setCompletionMessage("Daily reset complete. Your streak just grew.");
+      }
+
+      return nextTasks;
+    });
   }
 
   function toggleFavoriteQuote() {
     setFavoriteQuotes((current) =>
-      current.includes(currentQuote.id)
-        ? current.filter((quoteId) => quoteId !== currentQuote.id)
-        : [...current, currentQuote.id],
+      current.includes(dailyInspiration.id)
+        ? current.filter((quoteId) => quoteId !== dailyInspiration.id)
+        : [...current, dailyInspiration.id],
     );
   }
 
   async function shareQuote() {
-    const shareText = `${currentQuote.text} — DomestiQ AI`;
+    const shareText = `${dailyInspiration.quote} — ${dailyInspiration.author}`;
 
     if (navigator.share) {
       try {
@@ -225,9 +292,15 @@ export function MvpDashboard() {
           tagline="Smarter living starts at home"
           compact
         />
-        <div className={styles.profileBadge}>
-          <span className={styles.avatar}>{displayName.charAt(0).toUpperCase()}</span>
-          <strong>Hello, {displayName}!</strong>
+        <div className={styles.topBarMeta}>
+          <div className={styles.profileBadge}>
+            <span className={styles.avatar}>{displayName.charAt(0).toUpperCase()}</span>
+            <strong>Hello, {displayName}!</strong>
+          </div>
+          <div className={styles.streakBadge}>
+            <span>Clean streak</span>
+            <strong>{progressSnapshot.streakCount} day{progressSnapshot.streakCount === 1 ? "" : "s"}</strong>
+          </div>
         </div>
       </article>
 
@@ -235,8 +308,9 @@ export function MvpDashboard() {
         <div className={styles.sectionHeaderSplit}>
           <h2>Mindful Cleaning Moments</h2>
         </div>
-        <p className={styles.mindfulNote}>{currentQuote.note}</p>
-        <blockquote className={styles.mindfulQuote}>{currentQuote.text}</blockquote>
+        <p className={styles.mindfulNote}>{dailyInspiration.note}</p>
+        <blockquote className={styles.mindfulQuote}>{dailyInspiration.quote}</blockquote>
+        <p className={styles.mindfulMeta}>{dailyInspiration.author} · {dailyInspiration.category}</p>
         <div className={styles.mindfulActions}>
           <button className={styles.mindfulButton} type="button" onClick={toggleFavoriteQuote}>
             {isFavoriteQuote ? "Saved" : "Save Favorite"}
@@ -265,6 +339,21 @@ export function MvpDashboard() {
           <strong>{completedCount} / {tasks.length} Completed</strong>
           <div className={styles.progressTrack} aria-hidden="true">
             <span style={{ width: `${completionRate}%` }} />
+          </div>
+        </div>
+
+        <div className={styles.streakPanel}>
+          <div>
+            <span className={styles.streakLabel}>Current streak</span>
+            <strong>{progressSnapshot.streakCount} day{progressSnapshot.streakCount === 1 ? "" : "s"}</strong>
+          </div>
+          <div>
+            <span className={styles.streakLabel}>Best streak</span>
+            <strong>{progressSnapshot.bestStreak} day{progressSnapshot.bestStreak === 1 ? "" : "s"}</strong>
+          </div>
+          <div>
+            <span className={styles.streakLabel}>Today</span>
+            <strong>{allTasksCompleted ? "Fully reset" : "In progress"}</strong>
           </div>
         </div>
       </article>
@@ -319,6 +408,17 @@ export function MvpDashboard() {
           </ul>
         </article>
       </div>
+
+      {showCelebration ? (
+        <aside className={styles.celebrationBurst} aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </aside>
+      ) : null}
 
       {completionMessage ? <aside className={styles.completionToast}>{completionMessage}</aside> : null}
 

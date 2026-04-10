@@ -29,6 +29,32 @@
   text-align: center;
 }
 
+.modeTabs {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(15, 93, 181, 0.08);
+}
+
+.modeTab {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #4a6988;
+  font: inherit;
+  font-weight: 700;
+}
+
+.modeTabActive {
+  background: white;
+  color: #11477a;
+  box-shadow: 0 8px 18px rgba(15, 93, 181, 0.12);
+}
+
 .cardHeader h1 {
   margin: 0;
   font-size: clamp(2rem, 8vw, 2.8rem);
@@ -86,6 +112,16 @@
   border-radius: 12px;
   background: rgba(255, 239, 225, 0.9);
   color: #9a5200;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.successText {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(226, 250, 240, 0.94);
+  color: #15724f;
   font-size: 0.95rem;
   line-height: 1.45;
 }
@@ -166,6 +202,20 @@
 .socialButtonmicrosoft .socialIcon {
   background: rgba(15, 124, 174, 0.12);
   color: #0f7cae;
+}
+
+.signupNote {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(239, 248, 253, 0.92);
+  color: #25557c;
+  text-align: center;
+}
+
+.signupNote strong {
+  color: #11477a;
 }
 
 .guestLink {

@@ -22,6 +22,8 @@ export const storageKeys = {
   chat: "domestiq-ai-chat",
   chatTitle: "domestiq-ai-chat-title",
   authProfile: "domestiq-ai-auth-profile",
+  accounts: "domestiq-ai-accounts",
+  progress: "domestiq-ai-progress",
 } as const;
 
 export const defaultTasks: Task[] = [

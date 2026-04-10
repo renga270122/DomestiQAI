@@ -13,13 +13,29 @@ const socialProviders = [
   { id: "microsoft", icon: "◫", label: "Microsoft", displayName: "Microsoft Guest" },
 ];
 
+type AuthMode = "login" | "signup";
+
+type StoredAccount = {
+  fullName: string;
+  email: string;
+  householdName: string;
+  password: string;
+  createdAt: string;
+};
+
 export default function LoginPage() {
   const router = useRouter();
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [fullName, setFullName] = useState("");
+  const [householdName, setHouseholdName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const currentYear = useMemo(() => new Date().getFullYear(), []);
 
@@ -55,33 +71,121 @@ export default function LoginPage() {
     );
   }
 
+  function readStoredAccounts() {
+    try {
+      const saved = window.localStorage.getItem(storageKeys.accounts);
+      return saved ? (JSON.parse(saved) as StoredAccount[]) : [];
+    } catch {
+      return [] as StoredAccount[];
+    }
+  }
+
+  function persistAccount(account: StoredAccount) {
+    const existingAccounts = readStoredAccounts();
+    const nextAccounts = [
+      ...existingAccounts.filter((savedAccount) => savedAccount.email.toLowerCase() !== account.email.toLowerCase()),
+      account,
+    ];
+
+    window.localStorage.setItem(storageKeys.accounts, JSON.stringify(nextAccounts));
+  }
+
+  function resetSignupFields() {
+    setFullName("");
+    setHouseholdName("");
+    setPassword("");
+    setConfirmPassword("");
+  }
+
+  function switchMode(mode: AuthMode) {
+    setAuthMode(mode);
+    setError(null);
+    setSuccessMessage(null);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+
+    if (mode === "login") {
+      setConfirmPassword("");
+      setFullName("");
+      setHouseholdName("");
+    }
+  }
+
   function goToDashboard(displayName: string, provider: string) {
     persistProfile(displayName, provider);
     router.push("/dashboard");
   }
 
   function handleLogin() {
+    const trimmedEmail = email.trim();
+
     if (!email.trim() || !password.trim()) {
       setError("Enter your email or username and password to continue.");
       return;
     }
 
-    setError(null);
-    goToDashboard(deriveDisplayName(email), "password");
-  }
+    const matchingAccount = readStoredAccounts().find(
+      (account) => account.email.toLowerCase() === trimmedEmail.toLowerCase(),
+    );
 
-  function handleSignup() {
-    if (!email.trim() || !password.trim()) {
-      setError("Add an email or username and password to create your space.");
+    if (matchingAccount && matchingAccount.password !== password) {
+      setSuccessMessage(null);
+      setError("That password does not match the saved account details.");
       return;
     }
 
     setError(null);
-    goToDashboard(deriveDisplayName(email), "signup");
+    setSuccessMessage(null);
+    goToDashboard(matchingAccount?.fullName || deriveDisplayName(trimmedEmail), "password");
+  }
+
+  function handleSignup() {
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim();
+    const trimmedHousehold = householdName.trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedHousehold || !password.trim() || !confirmPassword.trim()) {
+      setSuccessMessage(null);
+      setError("Fill in your name, home name, email, and password to create your account.");
+      return;
+    }
+
+    if (!trimmedEmail.includes("@")) {
+      setSuccessMessage(null);
+      setError("Enter a valid email address so your account can be saved.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setSuccessMessage(null);
+      setError("Use a password with at least 6 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setSuccessMessage(null);
+      setError("Your password confirmation does not match.");
+      return;
+    }
+
+    persistAccount({
+      fullName: trimmedName,
+      email: trimmedEmail,
+      householdName: trimmedHousehold,
+      password,
+      createdAt: new Date().toISOString(),
+    });
+
+    setError(null);
+    setSuccessMessage(`Account created successfully for ${trimmedName}. You can log in now or continue straight to your dashboard.`);
+    persistProfile(trimmedName, "signup");
+    resetSignupFields();
+    setAuthMode("login");
   }
 
   function handleProviderLogin(displayName: string, provider: string) {
     setError(null);
+    setSuccessMessage(null);
     goToDashboard(displayName, provider);
   }
 
@@ -98,15 +202,53 @@ export default function LoginPage() {
 
         <section className={styles.card}>
           <div className={styles.cardHeader}>
-            <h1>Welcome Back</h1>
-            <p>Sign in to continue managing your home flow.</p>
+            <div className={styles.modeTabs}>
+              <button
+                className={`${styles.modeTab} ${authMode === "login" ? styles.modeTabActive : ""}`}
+                type="button"
+                onClick={() => switchMode("login")}
+              >
+                Login
+              </button>
+              <button
+                className={`${styles.modeTab} ${authMode === "signup" ? styles.modeTabActive : ""}`}
+                type="button"
+                onClick={() => switchMode("signup")}
+              >
+                Sign Up
+              </button>
+            </div>
+            <h1>{authMode === "signup" ? "Create Your Account" : "Welcome Back"}</h1>
+            <p>
+              {authMode === "signup"
+                ? "Add your details so DomestiQ AI can save your account and household profile."
+                : "Sign in to continue managing your home flow."}
+            </p>
           </div>
 
           <form className={styles.form} onSubmit={(event) => event.preventDefault()}>
+            {authMode === "signup" ? (
+              <>
+                <input
+                  className={styles.input}
+                  type="text"
+                  placeholder="Full Name"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                />
+                <input
+                  className={styles.input}
+                  type="text"
+                  placeholder="Home Name"
+                  value={householdName}
+                  onChange={(event) => setHouseholdName(event.target.value)}
+                />
+              </>
+            ) : null}
             <input
               className={styles.input}
               type="text"
-              placeholder="Email / Username"
+              placeholder={authMode === "signup" ? "Email Address" : "Email / Username"}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
@@ -127,12 +269,45 @@ export default function LoginPage() {
                 <span className={styles.eye} aria-hidden="true">◔</span>
               </button>
             </div>
-            <Link className={styles.forgotLink} href="/assistant">
-              Forgot password?
-            </Link>
-            <button className={styles.primaryButton} type="button" onClick={handleLogin}>Login</button>
-            <button className={styles.secondaryButton} type="button" onClick={handleSignup}>Sign Up</button>
+            {authMode === "signup" ? (
+              <div className={styles.passwordRow}>
+                <input
+                  className={styles.input}
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                />
+                <button
+                  className={styles.eyeButton}
+                  type="button"
+                  aria-label={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}
+                  onClick={() => setShowConfirmPassword((current) => !current)}
+                >
+                  <span className={styles.eye} aria-hidden="true">◔</span>
+                </button>
+              </div>
+            ) : (
+              <Link className={styles.forgotLink} href="/assistant">
+                Forgot password?
+              </Link>
+            )}
+            <button
+              className={styles.primaryButton}
+              type="button"
+              onClick={authMode === "signup" ? handleSignup : handleLogin}
+            >
+              {authMode === "signup" ? "Create Account" : "Login"}
+            </button>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              onClick={() => switchMode(authMode === "signup" ? "login" : "signup")}
+            >
+              {authMode === "signup" ? "Back to Login" : "Create New Account"}
+            </button>
             {error ? <p className={styles.errorText}>{error}</p> : null}
+            {successMessage ? <p className={styles.successText}>{successMessage}</p> : null}
           </form>
 
           <div className={styles.optionsRow}>
@@ -142,19 +317,26 @@ export default function LoginPage() {
             </label>
           </div>
 
-          <div className={styles.socialRow}>
-            {socialProviders.map((provider) => (
-              <button
-                key={provider.id}
-                className={`${styles.socialButton} ${styles[`socialButton${provider.id}`]}`}
-                type="button"
-                onClick={() => handleProviderLogin(provider.displayName, provider.id)}
-              >
-                <span className={styles.socialIcon} aria-hidden="true">{provider.icon}</span>
-                <span>{provider.label}</span>
-              </button>
-            ))}
-          </div>
+          {authMode === "login" ? (
+            <div className={styles.socialRow}>
+              {socialProviders.map((provider) => (
+                <button
+                  key={provider.id}
+                  className={`${styles.socialButton} ${styles[`socialButton${provider.id}`]}`}
+                  type="button"
+                  onClick={() => handleProviderLogin(provider.displayName, provider.id)}
+                >
+                  <span className={styles.socialIcon} aria-hidden="true">{provider.icon}</span>
+                  <span>{provider.label}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.signupNote}>
+              <strong>Your details stay on this device for now.</strong>
+              <span>When you create an account, DomestiQ AI saves your profile locally and prepares your dashboard greeting.</span>
+            </div>
+          )}
 
           <Link className={styles.guestLink} href="/dashboard">
             Continue as Guest
