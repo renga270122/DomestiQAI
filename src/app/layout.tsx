@@ -16,10 +16,21 @@ const bodyFont = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://domestiq.soulvest.ai"),
   title: "DomestiQ AI",
   description: "AI-powered home cleaning orchestration for smarter routines, reminders, and family coordination.",
   manifest: "/manifest.webmanifest",
   applicationName: "DomestiQ AI",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "DomestiQ AI",
+    description: "AI-powered home cleaning orchestration for smarter routines, reminders, and family coordination.",
+    url: "https://domestiq.soulvest.ai",
+    siteName: "DomestiQ AI",
+    type: "website",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

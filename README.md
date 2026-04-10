@@ -2,6 +2,8 @@
 
 DomestiQ AI is a mobile-first Next.js PWA for home cleaning routines. The current app includes a compact home screen, a task dashboard, basic reminders, and a first AI assistant chat screen.
 
+Production domain: `https://domestiq.soulvest.ai`
+
 ## Stack
 
 - Next.js 16 with App Router
@@ -18,6 +20,8 @@ npm run dev
 ```
 
 Then open `http://localhost:3000`.
+
+For production deployment, use `https://domestiq.soulvest.ai` as the primary domain.
 
 ## Assistant backend setup
 

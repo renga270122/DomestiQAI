@@ -2,11 +2,13 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "https://domestiq.soulvest.ai/",
     name: "DomestiQ AI",
     short_name: "DomestiQ AI",
     description:
       "AI-powered home cleaning dashboard with reminders, analytics, scheduling, and smart-home integration.",
-    start_url: "/",
+    start_url: "https://domestiq.soulvest.ai/",
+    scope: "https://domestiq.soulvest.ai/",
     display: "standalone",
     background_color: "#f6f3ee",
     theme_color: "#0f5db5",

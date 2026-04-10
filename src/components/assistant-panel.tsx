@@ -8,6 +8,7 @@ import {
   readTasksFromStorage,
   storageKeys,
 } from "@/lib/household-data";
+import { BrandLockup } from "@/components/brand-lockup";
 import styles from "./assistant-panel.module.css";
 
 type ChatMessage = {
@@ -52,6 +53,30 @@ function readTitle(): string {
   }
 
   return window.localStorage.getItem(storageKeys.chatTitle) ?? titleFallback;
+}
+
+function formatAssistantError(message: string) {
+  if (message.includes("Missing OpenAI configuration")) {
+    return "AI chat is almost ready. Add a valid OPENAI_API_KEY in your Vercel project settings to enable live cleaning plans.";
+  }
+
+  if (message.includes("Missing GitHub Models configuration")) {
+    return "AI chat is not connected yet. Add your GitHub Models token and model in the deployment environment settings.";
+  }
+
+  if (message.includes("Missing Azure OpenAI configuration")) {
+    return "AI chat is not connected yet. Add the Azure OpenAI endpoint, deployment, and API key in the deployment environment settings.";
+  }
+
+  if (/quota|insufficient_quota/i.test(message)) {
+    return "The connected AI key has no remaining quota right now. Replace or recharge the provider key to restore live responses.";
+  }
+
+  if (message.includes("Unable to reach the assistant provider")) {
+    return "The AI provider is temporarily unreachable. Try again in a minute.";
+  }
+
+  return message;
 }
 
 export function AssistantPanel() {
@@ -176,7 +201,7 @@ export function AssistantPanel() {
       setMessages((current) => current.filter((message) => message.id !== assistantMessageId));
       setError(
         requestError instanceof Error
-          ? requestError.message
+          ? formatAssistantError(requestError.message)
           : "Unable to get a response from the assistant.",
       );
     } finally {
@@ -210,8 +235,13 @@ export function AssistantPanel() {
   return (
     <section className={styles.shell}>
       <header className={styles.header}>
-        <div>
-          <span className={styles.eyebrow}>AI assistant</span>
+        <div className={styles.headerContent}>
+          <BrandLockup
+            kicker="AI assistant"
+            title="DomestiQ AI"
+            tagline="Short cleaning plans shaped around your time, rooms, and current task load."
+            compact
+          />
           <h1>Ask for a cleaning plan</h1>
           <p>Use short requests to get a practical cleaning order for your current situation.</p>
           <span className={styles.chatTitle}>{title}</span>

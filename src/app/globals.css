@@ -50,6 +50,54 @@ textarea {
   padding: 16px 0 108px;
 }
 
+.brand-lockup {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.brand-lockup--compact {
+  gap: 12px;
+}
+
+.brand-lockup__mark {
+  width: 60px;
+  height: 60px;
+  filter: drop-shadow(0 16px 28px rgba(15, 93, 181, 0.18));
+}
+
+.brand-lockup--compact .brand-lockup__mark {
+  width: 48px;
+  height: 48px;
+}
+
+.brand-lockup__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.brand-lockup__kicker {
+  display: inline-flex;
+  color: var(--blue);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.brand-lockup__title {
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(1.5rem, 6vw, 2.3rem);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+.brand-lockup__tagline {
+  max-width: 34ch;
+  color: var(--muted);
+}
+
 .app-screen {
   display: grid;
   gap: 16px;
@@ -113,6 +161,74 @@ p {
   gap: 12px;
   padding: 22px;
   border-radius: 28px;
+}
+
+.screen-header--hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 251, 245, 0.95), rgba(255, 251, 245, 0.88)),
+    radial-gradient(circle at top right, rgba(255, 157, 46, 0.18), transparent 34%),
+    radial-gradient(circle at top left, rgba(15, 93, 181, 0.12), transparent 28%);
+}
+
+.screen-header--hero::after {
+  content: "";
+  position: absolute;
+  right: -58px;
+  top: -64px;
+  width: 180px;
+  height: 180px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(15, 93, 181, 0.14), transparent 68%);
+  pointer-events: none;
+}
+
+.screen-header__stack {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 16px;
+}
+
+.screen-header__summary {
+  max-width: 40ch;
+  font-size: 1rem;
+}
+
+.hero-metrics {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.metric-pill {
+  display: grid;
+  gap: 2px;
+  min-width: 140px;
+  padding: 12px 14px;
+  border: 1px solid rgba(20, 48, 72, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.metric-pill span {
+  color: var(--blue);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.metric-pill strong {
+  font-family: var(--font-heading), sans-serif;
+  font-size: 1.05rem;
+}
+
+.metric-pill--accent {
+  background: linear-gradient(135deg, rgba(255, 157, 46, 0.16), rgba(15, 93, 181, 0.08));
 }
 
 .home-grid,
@@ -297,6 +413,11 @@ p {
   .screen-header {
     grid-template-columns: 1fr auto;
     align-items: center;
+  }
+
+  .screen-header--hero {
+    grid-template-columns: 1.6fr 1fr;
+    align-items: end;
   }
 
   .app-nav {

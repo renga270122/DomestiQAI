@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLockup } from "@/components/brand-lockup";
 
 const quickActions = [
   { href: "/dashboard", title: "Open tasks", detail: "Manage chores and reminders" },
@@ -16,11 +17,26 @@ const homeSections = ["Kitchen", "Bathroom", "Bedroom", "Laundry"];
 export default function Home() {
   return (
     <main className="page-shell app-screen">
-      <section className="screen-header">
-        <div>
-          <span className="eyebrow">Home</span>
-          <h1>DomestiQ AI</h1>
-          <p>Open tasks, check reminders, or ask for a cleaning plan.</p>
+      <section className="screen-header screen-header--hero">
+        <div className="screen-header__stack">
+          <BrandLockup
+            kicker="AI home reset companion"
+            title="DomestiQ AI"
+            tagline="Calm cleaning plans, faster resets, and one place to keep your home flow in sync."
+          />
+          <p className="screen-header__summary">
+            Open tasks, check reminders, or ask for a room-by-room plan built around what actually needs attention today.
+          </p>
+        </div>
+        <div className="hero-metrics" aria-label="App highlights">
+          <div className="metric-pill">
+            <span>Today</span>
+            <strong>3 tasks active</strong>
+          </div>
+          <div className="metric-pill metric-pill--accent">
+            <span>Assistant</span>
+            <strong>Quick reset plans</strong>
+          </div>
         </div>
       </section>
 
@@ -79,8 +95,8 @@ export default function Home() {
         <div className="home-card home-card--assistant">
           <div>
             <span className="home-card__label">AI assistant</span>
-            <strong>First AI entry point</strong>
-            <p>Ask for a quick plan before guests, after work, or for a weekend reset.</p>
+            <strong>Instant room-by-room guidance</strong>
+            <p>Ask for a balcony cleanup, a guest-ready reset, or a short plan for the next 15 minutes.</p>
           </div>
           <Link className="secondary-action compact-action" href="/assistant">
             Open chat
