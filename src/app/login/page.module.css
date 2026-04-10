@@ -55,11 +55,17 @@
   position: relative;
 }
 
-.eye {
+.eyeButton {
   position: absolute;
-  right: 14px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  padding: 6px;
+}
+
+.eye {
   color: #516984;
 }
 
@@ -72,6 +78,16 @@
 
 .forgotLink {
   font-weight: 600;
+}
+
+.errorText {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 239, 225, 0.9);
+  color: #9a5200;
+  font-size: 0.95rem;
+  line-height: 1.45;
 }
 
 .primaryButton,
@@ -109,17 +125,47 @@
 }
 
 .socialRow {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .socialButton {
-  width: 48px;
-  min-height: 48px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-height: 74px;
+  padding: 10px 8px;
   border: 1px solid rgba(32, 110, 156, 0.14);
   background: white;
   color: #1b4370;
+}
+
+.socialIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(15, 93, 181, 0.08);
+  color: #0f5db5;
+  font-weight: 700;
+}
+
+.socialButtongoogle .socialIcon {
+  background: rgba(234, 67, 53, 0.12);
+  color: #db4437;
+}
+
+.socialButtonfacebook .socialIcon {
+  background: rgba(24, 119, 242, 0.12);
+  color: #1877f2;
+}
+
+.socialButtonmicrosoft .socialIcon {
+  background: rgba(15, 124, 174, 0.12);
+  color: #0f7cae;
 }
 
 .guestLink {
