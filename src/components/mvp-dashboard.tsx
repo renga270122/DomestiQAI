@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getDailyInspiration, type DailyInspiration } from "@/lib/daily-inspiration";
 import {
   readRemindersFromStorage,
@@ -97,6 +97,24 @@ function buildDashboardInsights(tasks: Task[], reminders: Reminder[]) {
   ];
 }
 
+function buildSmartNudges(tasks: Task[], reminders: Reminder[], completionRate: number) {
+  const openTasks = tasks.filter((task) => !task.completed);
+  const firstTask = openTasks[0];
+  const enabledReminder = reminders.find((reminder) => reminder.enabled);
+
+  return [
+    completionRate >= 75
+      ? "You are almost done. One more reset keeps the streak alive."
+      : `Start with ${firstTask?.title.toLowerCase() ?? "your top reset"} for the quickest momentum boost.`,
+    enabledReminder
+      ? `${enabledReminder.label} is active for ${enabledReminder.time}. Keep the rhythm going.`
+      : "Reset your space, reset your energy.",
+    openTasks.length <= 1
+      ? "You are one task away from a fully reset home today."
+      : `${openTasks.length} tasks remain. A 10 minute focus sprint will move this fast.`,
+  ];
+}
+
 export function MvpDashboard() {
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
@@ -111,6 +129,8 @@ export function MvpDashboard() {
   const [progressSnapshot, setProgressSnapshot] = useState<ProgressSnapshot>(readProgressSnapshot);
   const [dailyInspiration, setDailyInspiration] = useState<DailyInspiration>(getDailyInspiration);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">("default");
+  const reminderTimeouts = useRef<number[]>([]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -159,9 +179,23 @@ export function MvpDashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!("Notification" in window)) {
+      setNotificationPermission("unsupported");
+      return;
+    }
+
+    setNotificationPermission(window.Notification.permission);
+  }, []);
+
   const completedCount = tasks.filter((task) => task.completed).length;
   const completionRate = tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
   const allTasksCompleted = tasks.length > 0 && completedCount === tasks.length;
+  const smartNudges = buildSmartNudges(tasks, reminders, completionRate);
 
   useEffect(() => {
     if (!completionMessage) {
@@ -182,6 +216,13 @@ export function MvpDashboard() {
 
     return () => window.clearTimeout(timer);
   }, [showCelebration]);
+
+  useEffect(() => {
+    return () => {
+      reminderTimeouts.current.forEach((timerId) => window.clearTimeout(timerId));
+      reminderTimeouts.current = [];
+    };
+  }, []);
 
   if (!isHydrated) {
     return (
@@ -283,6 +324,41 @@ export function MvpDashboard() {
     }
   }
 
+  async function scheduleSmartReminder() {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!("Notification" in window)) {
+      setCompletionMessage("Smart nudges work best in a browser that supports notifications.");
+      return;
+    }
+
+    let permission = window.Notification.permission;
+
+    if (permission === "default") {
+      permission = await window.Notification.requestPermission();
+      setNotificationPermission(permission);
+    }
+
+    if (permission !== "granted") {
+      setCompletionMessage("Enable browser notifications to receive gentle reminders from DomestiQ AI.");
+      return;
+    }
+
+    const reminderBody = smartNudges[0];
+
+    const timerId = window.setTimeout(() => {
+      new window.Notification("DomestiQ AI", {
+        body: reminderBody,
+        icon: "/icons/icon-192.svg",
+      });
+    }, 6000);
+
+    reminderTimeouts.current.push(timerId);
+    setCompletionMessage("Gentle reminder set. You will get a smart nudge in a few seconds.");
+  }
+
   return (
     <section className={styles.shell}>
       <article className={styles.topBar}>
@@ -372,7 +448,19 @@ export function MvpDashboard() {
           <h2>Smart Suggestions</h2>
         </div>
         <p className={styles.suggestionText}>Time to {activeSuggestion.toLowerCase()}!</p>
-        <button className={styles.reminderButton} type="button">Set Reminder</button>
+        <div className={styles.nudgeList}>
+          {smartNudges.map((nudge) => (
+            <p key={nudge} className={styles.nudgeItem}>{nudge}</p>
+          ))}
+        </div>
+        <button className={styles.reminderButton} type="button" onClick={() => void scheduleSmartReminder()}>
+          {notificationPermission === "granted" ? "Send Gentle Nudge" : "Enable Smart Reminder"}
+        </button>
+        <p className={styles.reminderHint}>
+          {notificationPermission === "unsupported"
+            ? "Notifications are not supported in this browser, so DomestiQ AI will keep using in-app nudges."
+            : "Smart reminders use your browser notification permission and send a gentle prompt from the open app."}
+        </p>
       </article>
 
       <div className={styles.bottomGrid}>

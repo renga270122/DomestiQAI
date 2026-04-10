@@ -295,6 +295,18 @@
   color: #214c73;
 }
 
+.nudgeList {
+  display: grid;
+  gap: 10px;
+}
+
+.nudgeItem {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(240, 249, 255, 0.94);
+  color: #1c567f;
+}
+
 .reminderButton {
   justify-self: center;
   min-width: 180px;
@@ -305,6 +317,12 @@
   color: white;
   font: inherit;
   font-weight: 700;
+}
+
+.reminderHint {
+  text-align: center;
+  font-size: 0.92rem;
+  color: #5d7690;
 }
 
 .bottomGrid {
