@@ -1,0 +1,36 @@
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "DomestiQ AI",
+    short_name: "DomestiQ AI",
+    description:
+      "AI-powered home cleaning dashboard with reminders, analytics, scheduling, and smart-home integration.",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#f6f3ee",
+    theme_color: "#0f5db5",
+    orientation: "portrait",
+    categories: ["productivity", "lifestyle", "utilities"],
+    icons: [
+      {
+        src: "/icons/icon-192.svg",
+        sizes: "192x192",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-512.svg",
+        sizes: "512x512",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+      {
+        src: "/icons/maskable-icon.svg",
+        sizes: "512x512",
+        type: "image/svg+xml",
+        purpose: "maskable",
+      },
+    ],
+  };
+}

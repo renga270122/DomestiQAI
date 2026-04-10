@@ -1,0 +1,151 @@
+.shell {
+  display: grid;
+  gap: 16px;
+}
+
+.header,
+.quickPanel,
+.messagesPanel,
+.composer {
+  border: 1px solid rgba(19, 48, 75, 0.1);
+  background: rgba(255, 251, 245, 0.88);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 60px rgba(20, 46, 72, 0.1);
+  border-radius: 28px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+}
+
+.eyebrow,
+.panelLabel,
+.messageRole {
+  display: inline-flex;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.eyebrow,
+.panelLabel {
+  color: #0f5db5;
+}
+
+.header h1 {
+  margin: 10px 0 8px;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(2rem, 8vw, 3rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+}
+
+.header p,
+.message p {
+  margin: 0;
+  color: #53677c;
+  line-height: 1.55;
+}
+
+.ghostButton,
+.promptChip,
+.sendButton,
+.input {
+  font: inherit;
+}
+
+.ghostButton {
+  align-self: start;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(19, 48, 75, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.84);
+  color: #13304b;
+  cursor: pointer;
+}
+
+.quickPanel,
+.messagesPanel,
+.composer {
+  padding: 18px;
+}
+
+.promptList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.promptChip {
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(15, 93, 181, 0.09);
+  color: #0f5db5;
+  text-align: left;
+  cursor: pointer;
+}
+
+.messagesPanel {
+  display: grid;
+  gap: 12px;
+}
+
+.message {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 20px;
+}
+
+.assistant {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(19, 48, 75, 0.08);
+}
+
+.user {
+  background: linear-gradient(135deg, rgba(255, 122, 0, 0.12), rgba(15, 93, 181, 0.08));
+  border: 1px solid rgba(255, 122, 0, 0.12);
+}
+
+.messageRole {
+  color: #0d2d4b;
+}
+
+.composer {
+  display: grid;
+  gap: 12px;
+}
+
+.input {
+  width: 100%;
+  resize: vertical;
+  min-height: 90px;
+  padding: 14px;
+  border: 1px solid rgba(19, 48, 75, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #13304b;
+}
+
+.sendButton {
+  min-height: 48px;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ff7a00, #ff9d2e);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .header {
+    display: grid;
+  }
+}
