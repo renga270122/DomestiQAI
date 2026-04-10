@@ -1,99 +1,16 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  areaOptions,
+  readRemindersFromStorage,
+  readTasksFromStorage,
+  storageKeys,
+  type Priority,
+  type Reminder,
+  type Task,
+} from "@/lib/household-data";
 import styles from "./mvp-dashboard.module.css";
-
-type Priority = "low" | "medium" | "high";
-
-type Task = {
-  id: string;
-  title: string;
-  area: string;
-  due: string;
-  priority: Priority;
-  completed: boolean;
-};
-
-type Reminder = {
-  id: string;
-  label: string;
-  time: string;
-  enabled: boolean;
-};
-
-const storageKeys = {
-  tasks: "domestiq-ai-phase1-tasks",
-  reminders: "domestiq-ai-phase1-reminders",
-};
-
-const defaultTasks: Task[] = [
-  {
-    id: "task-1",
-    title: "Reset kitchen counters",
-    area: "Kitchen",
-    due: "Today",
-    priority: "high",
-    completed: false,
-  },
-  {
-    id: "task-2",
-    title: "Wash bedding",
-    area: "Bedroom",
-    due: "Today",
-    priority: "medium",
-    completed: true,
-  },
-  {
-    id: "task-3",
-    title: "Sweep balcony",
-    area: "Balcony",
-    due: "Tomorrow",
-    priority: "low",
-    completed: false,
-  },
-  {
-    id: "task-4",
-    title: "Empty robot vacuum bin",
-    area: "Living room",
-    due: "Saturday",
-    priority: "medium",
-    completed: false,
-  },
-];
-
-const defaultReminders: Reminder[] = [
-  { id: "reminder-1", label: "Kitchen reset", time: "7:30 PM", enabled: true },
-  { id: "reminder-2", label: "Laundry review", time: "8:00 AM", enabled: true },
-  { id: "reminder-3", label: "Weekend deep clean", time: "9:00 AM", enabled: false },
-];
-
-const areaOptions = ["All areas", "Kitchen", "Bathroom", "Bedroom", "Living room", "Balcony", "Garage"];
-
-function readTasksFromStorage(): Task[] {
-  if (typeof window === "undefined") {
-    return defaultTasks;
-  }
-
-  try {
-    const savedTasks = window.localStorage.getItem(storageKeys.tasks);
-    return savedTasks ? (JSON.parse(savedTasks) as Task[]) : defaultTasks;
-  } catch {
-    return defaultTasks;
-  }
-}
-
-function readRemindersFromStorage(): Reminder[] {
-  if (typeof window === "undefined") {
-    return defaultReminders;
-  }
-
-  try {
-    const savedReminders = window.localStorage.getItem(storageKeys.reminders);
-    return savedReminders ? (JSON.parse(savedReminders) as Reminder[]) : defaultReminders;
-  } catch {
-    return defaultReminders;
-  }
-}
 
 export function MvpDashboard() {
   const isHydrated = useSyncExternalStore(

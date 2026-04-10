@@ -51,11 +51,25 @@
   line-height: 1.55;
 }
 
+.chatTitle {
+  display: inline-flex;
+  margin-top: 12px;
+  color: #143048;
+  font-weight: 600;
+}
+
 .ghostButton,
 .promptChip,
 .sendButton,
 .input {
   font: inherit;
+}
+
+.promptChip:disabled,
+.ghostButton:disabled,
+.sendButton:disabled,
+.input:disabled {
+  opacity: 0.65;
 }
 
 .ghostButton {
@@ -142,6 +156,13 @@
   color: white;
   font-weight: 700;
   cursor: pointer;
+}
+
+.errorText {
+  margin: 0;
+  padding: 0 6px;
+  color: #bf5f00;
+  font-size: 0.95rem;
 }
 
 @media (max-width: 720px) {

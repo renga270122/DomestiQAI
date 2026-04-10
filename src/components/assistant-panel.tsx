@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  buildConversationTitle,
+  buildHouseholdContextSummary,
+  readRemindersFromStorage,
+  readTasksFromStorage,
+  storageKeys,
+} from "@/lib/household-data";
 import styles from "./assistant-panel.module.css";
 
 type ChatMessage = {
@@ -9,7 +16,7 @@ type ChatMessage = {
   content: string;
 };
 
-const storageKey = "domestiq-ai-chat";
+const titleFallback = "New chat";
 
 const starterMessages: ChatMessage[] = [
   {
@@ -32,33 +39,19 @@ function readMessages(): ChatMessage[] {
   }
 
   try {
-    const saved = window.localStorage.getItem(storageKey);
+    const saved = window.localStorage.getItem(storageKeys.chat);
     return saved ? (JSON.parse(saved) as ChatMessage[]) : starterMessages;
   } catch {
     return starterMessages;
   }
 }
 
-function buildAssistantReply(input: string): string {
-  const normalized = input.toLowerCase();
-
-  if (normalized.includes("guest")) {
-    return "Start with the entry, living room, and bathroom. Clear visible clutter first, wipe high-touch surfaces, then do one quick vacuum pass before guests arrive.";
+function readTitle(): string {
+  if (typeof window === "undefined") {
+    return titleFallback;
   }
 
-  if (normalized.includes("20 minute") || normalized.includes("20-minute")) {
-    return "Use a 20 minute reset: 5 minutes collecting clutter, 7 minutes on kitchen surfaces, 5 minutes on floors, and 3 minutes to reset the bathroom sink and mirror.";
-  }
-
-  if (normalized.includes("bathroom") && normalized.includes("kitchen")) {
-    return "Start with the kitchen: counters, sink, and trash. Then do the bathroom mirror, sink, and toilet. Finish with a fast floor sweep in both rooms.";
-  }
-
-  if (normalized.includes("saturday") || normalized.includes("weekend")) {
-    return "Suggested order: laundry first, then bedrooms, kitchen, bathroom, and finally floors. That keeps machine time running while you clear the main rooms.";
-  }
-
-  return "I can help turn that into a simple cleaning sequence. Tell me the rooms involved, how much time you have, and whether this is a quick reset or a deeper clean.";
+  return window.localStorage.getItem(storageKeys.chatTitle) ?? titleFallback;
 }
 
 export function AssistantPanel() {
@@ -68,37 +61,138 @@ export function AssistantPanel() {
     () => false,
   );
   const [messages, setMessages] = useState<ChatMessage[]>(readMessages);
+  const [title, setTitle] = useState(readTitle);
   const [draft, setDraft] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    window.localStorage.setItem(storageKey, JSON.stringify(messages));
+    window.localStorage.setItem(storageKeys.chat, JSON.stringify(messages));
   }, [messages]);
 
-  function sendMessage(content: string) {
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(storageKeys.chatTitle, title);
+  }, [title]);
+
+  async function sendMessage(content: string) {
     const trimmed = content.trim();
     if (!trimmed) {
       return;
     }
 
-    setMessages((current) => [
-      ...current,
-      { id: crypto.randomUUID(), role: "user", content: trimmed },
-      { id: crypto.randomUUID(), role: "assistant", content: buildAssistantReply(trimmed) },
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: trimmed,
+    };
+
+    const assistantMessageId = crypto.randomUUID();
+
+    const nextMessages = [...messages, userMessage];
+    const nextTitle = title === titleFallback ? buildConversationTitle(trimmed) : title;
+
+    setMessages([
+      ...nextMessages,
+      { id: assistantMessageId, role: "assistant", content: "" },
     ]);
+    setTitle(nextTitle);
     setDraft("");
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const householdContext = buildHouseholdContextSummary(
+        readTasksFromStorage(),
+        readRemindersFromStorage(),
+      );
+
+      const response = await fetch("/api/assistant", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: nextMessages.map(({ role, content: messageContent }) => ({
+            role,
+            content: messageContent,
+          })),
+          householdContext,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? "Assistant request failed.");
+      }
+
+      if (!response.body) {
+        throw new Error("Assistant stream was not available.");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        assistantMessage += decoder.decode(value, { stream: true });
+
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? { ...message, content: assistantMessage }
+              : message,
+          ),
+        );
+      }
+
+      assistantMessage += decoder.decode();
+
+      if (!assistantMessage.trim()) {
+        throw new Error("Assistant returned an empty response.");
+      }
+
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantMessageId
+            ? { ...message, content: assistantMessage }
+            : message,
+        ),
+      );
+    } catch (requestError) {
+      setMessages((current) => current.filter((message) => message.id !== assistantMessageId));
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to get a response from the assistant.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    sendMessage(draft);
+    await sendMessage(draft);
   }
 
   function clearChat() {
     setMessages(starterMessages);
+    setTitle(titleFallback);
+    setError(null);
   }
 
   if (!isHydrated) {
@@ -120,6 +214,7 @@ export function AssistantPanel() {
           <span className={styles.eyebrow}>AI assistant</span>
           <h1>Ask for a cleaning plan</h1>
           <p>Use short requests to get a practical cleaning order for your current situation.</p>
+          <span className={styles.chatTitle}>{title}</span>
         </div>
         <button className={styles.ghostButton} type="button" onClick={clearChat}>
           Clear
@@ -130,7 +225,13 @@ export function AssistantPanel() {
         <span className={styles.panelLabel}>Quick prompts</span>
         <div className={styles.promptList}>
           {quickPrompts.map((prompt) => (
-            <button key={prompt} className={styles.promptChip} type="button" onClick={() => sendMessage(prompt)}>
+            <button
+              key={prompt}
+              className={styles.promptChip}
+              type="button"
+              onClick={() => void sendMessage(prompt)}
+              disabled={isSubmitting}
+            >
               {prompt}
             </button>
           ))}
@@ -148,6 +249,7 @@ export function AssistantPanel() {
           </article>
         ))}
       </section>
+      {error ? <p className={styles.errorText}>{error}</p> : null}
 
       <form className={styles.composer} onSubmit={handleSubmit}>
         <textarea
@@ -156,9 +258,10 @@ export function AssistantPanel() {
           rows={3}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
+          disabled={isSubmitting}
         />
-        <button className={styles.sendButton} type="submit">
-          Send
+        <button className={styles.sendButton} type="submit" disabled={isSubmitting || draft.trim().length === 0}>
+          {isSubmitting ? "Sending..." : "Send"}
         </button>
       </form>
     </section>
