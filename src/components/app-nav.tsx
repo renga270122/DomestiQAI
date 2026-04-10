@@ -4,13 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const items = [
-  { href: "/", label: "Home", icon: "Home" },
+  { href: "/home", label: "Home", icon: "Home" },
   { href: "/dashboard", label: "Tasks", icon: "Tasks" },
   { href: "/assistant", label: "AI", icon: "AI" },
 ];
 
 export function AppNav() {
   const pathname = usePathname();
+
+  if (pathname === "/login") {
+    return null;
+  }
 
   return (
     <nav className="app-nav" aria-label="Primary navigation">

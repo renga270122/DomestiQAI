@@ -1,0 +1,150 @@
+.shell {
+  display: grid;
+  gap: 20px;
+  padding: 22px 18px 28px;
+  border: 1px solid rgba(70, 154, 201, 0.18);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(220, 243, 255, 0.96), rgba(196, 230, 250, 0.9));
+  box-shadow: 0 22px 70px rgba(21, 70, 112, 0.12);
+}
+
+.header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(32, 110, 156, 0.16);
+}
+
+.card {
+  display: grid;
+  gap: 16px;
+  padding: 24px 18px 16px;
+  border: 1px solid rgba(32, 110, 156, 0.14);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16px 40px rgba(32, 110, 156, 0.1);
+}
+
+.cardHeader {
+  display: grid;
+  gap: 8px;
+  text-align: center;
+}
+
+.cardHeader h1 {
+  margin: 0;
+  font-size: clamp(2rem, 8vw, 2.8rem);
+  line-height: 1;
+  color: #1b4370;
+}
+
+.form {
+  display: grid;
+  gap: 12px;
+}
+
+.input {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 14px;
+  border: 1px solid rgba(32, 110, 156, 0.18);
+  border-radius: 12px;
+  background: white;
+  color: #1a4068;
+}
+
+.passwordRow {
+  position: relative;
+}
+
+.eye {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #516984;
+}
+
+.forgotLink,
+.guestLink,
+.footerLinks a {
+  color: #0f5db5;
+  text-decoration: none;
+}
+
+.forgotLink {
+  font-weight: 600;
+}
+
+.primaryButton,
+.secondaryButton,
+.socialButton {
+  min-height: 48px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 700;
+}
+
+.primaryButton {
+  border: 0;
+  background: linear-gradient(135deg, #1097b0, #0f79b4);
+  color: white;
+}
+
+.secondaryButton {
+  border: 2px solid rgba(255, 122, 0, 0.7);
+  background: white;
+  color: #23405d;
+}
+
+.optionsRow {
+  display: flex;
+  justify-content: center;
+}
+
+.checkboxRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #304d69;
+  font-weight: 600;
+}
+
+.socialRow {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+
+.socialButton {
+  width: 48px;
+  min-height: 48px;
+  border: 1px solid rgba(32, 110, 156, 0.14);
+  background: white;
+  color: #1b4370;
+}
+
+.guestLink {
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+  border-top: 1px solid rgba(32, 110, 156, 0.12);
+  font-weight: 700;
+}
+
+.footer {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  padding-top: 10px;
+  border-top: 1px solid rgba(32, 110, 156, 0.16);
+}
+
+.footerLinks {
+  display: flex;
+  gap: 10px;
+  color: #5c7591;
+}
+
+.footer p {
+  font-size: 0.92rem;
+  color: #365573;
+}
