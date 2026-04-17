@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getDailyInspiration, type DailyInspiration } from "@/lib/daily-inspiration";
 import {
@@ -10,6 +9,13 @@ import {
   type Task,
 } from "@/lib/household-data";
 import { BrandLockup } from "@/components/brand-lockup";
+import AnalyticsTrends from "@/components/analytics-trends";
+import RoutineTemplates from "@/components/routine-templates";
+import CleaningResources from "@/components/cleaning-resources";
+import RoomGuideModal from "@/components/room-guide-modal";
+
+// Audio ref for reminder chime
+const reminderAudio = typeof window !== "undefined" ? new Audio("/reminder-chime.mp3") : null;
 import styles from "./mvp-dashboard.module.css";
 
 const quoteStorageKey = "domestiq-ai-quote-favorites";
@@ -115,7 +121,7 @@ function buildSmartNudges(tasks: Task[], reminders: Reminder[], completionRate: 
   ];
 }
 
-export function MvpDashboard() {
+  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -334,6 +340,11 @@ export function MvpDashboard() {
       return;
     }
 
+    // Play sound effect
+    try {
+      reminderAudio?.play();
+    } catch {}
+
     let permission = window.Notification.permission;
 
     if (permission === "default") {
@@ -436,12 +447,22 @@ export function MvpDashboard() {
 
       <div className={styles.roomGrid}>
         {roomCards.map((room) => (
-          <article key={room.label} className={styles.roomCard}>
+          <button
+            key={room.label}
+            className={styles.roomCard}
+            type="button"
+            style={{ cursor: "pointer", background: "none", border: 0, padding: 0 }}
+            onClick={() => setSelectedRoom(room.label)}
+          >
             <span className={`${styles.roomIcon} ${styles[`roomIcon${room.accent}`]}`}>{room.icon}</span>
             <strong>{room.label}</strong>
-          </article>
+          </button>
         ))}
       </div>
+
+      {selectedRoom && (
+        <RoomGuideModal room={selectedRoom} onClose={() => setSelectedRoom(null)} />
+      )}
 
       <article className={styles.dashboardCard}>
         <div className={styles.sectionHeader}>
@@ -510,6 +531,9 @@ export function MvpDashboard() {
 
       {completionMessage ? <aside className={styles.completionToast}>{completionMessage}</aside> : null}
 
+      <AnalyticsTrends streakCount={progressSnapshot.streakCount} bestStreak={progressSnapshot.bestStreak} tasks={tasks} />
+      <RoutineTemplates />
+      <CleaningResources />
       <footer className={styles.footer}>© 2026 DomestiQ AI. All rights reserved.</footer>
     </section>
   );

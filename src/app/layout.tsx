@@ -48,6 +48,8 @@ export const metadata: Metadata = {
   },
 };
 
+import Providers from "./providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -56,11 +58,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${headingFont.variable} ${bodyFont.variable}`}>
-        <PwaRegistration />
-        <div className="app-shell">
-          {children}
-          <AppNav />
-        </div>
+        <Providers>
+          <PwaRegistration />
+          <div className="app-shell">
+            {children}
+            <AppNav />
+          </div>
+        </Providers>
       </body>
     </html>
   );

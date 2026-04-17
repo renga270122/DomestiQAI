@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { signIn } from "next-auth/react";
 import { BrandLockup } from "@/components/brand-lockup";
 import { storageKeys } from "@/lib/household-data";
 import styles from "./page.module.css";
@@ -116,77 +117,31 @@ export default function LoginPage() {
     router.push("/dashboard");
   }
 
-  function handleLogin() {
-    const trimmedEmail = email.trim();
-
+  async function handleLogin() {
     if (!email.trim() || !password.trim()) {
-      setError("Enter your email or username and password to continue.");
+      setError("Enter your email and password to continue.");
       return;
     }
-
-    const matchingAccount = readStoredAccounts().find(
-      (account) => account.email.toLowerCase() === trimmedEmail.toLowerCase(),
-    );
-
-    if (matchingAccount && matchingAccount.password !== password) {
-      setSuccessMessage(null);
-      setError("That password does not match the saved account details.");
-      return;
-    }
-
     setError(null);
     setSuccessMessage(null);
-    goToDashboard(matchingAccount?.fullName || deriveDisplayName(trimmedEmail), "password");
+    const result = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
+    if (result?.error) {
+      setError("Invalid email or password.");
+    } else {
+      router.push("/dashboard");
+    }
   }
 
   function handleSignup() {
-    const trimmedName = fullName.trim();
-    const trimmedEmail = email.trim();
-    const trimmedHousehold = householdName.trim();
-
-    if (!trimmedName || !trimmedEmail || !trimmedHousehold || !password.trim() || !confirmPassword.trim()) {
-      setSuccessMessage(null);
-      setError("Fill in your name, home name, email, and password to create your account.");
-      return;
-    }
-
-    if (!trimmedEmail.includes("@")) {
-      setSuccessMessage(null);
-      setError("Enter a valid email address so your account can be saved.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setSuccessMessage(null);
-      setError("Use a password with at least 6 characters.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setSuccessMessage(null);
-      setError("Your password confirmation does not match.");
-      return;
-    }
-
-    persistAccount({
-      fullName: trimmedName,
-      email: trimmedEmail,
-      householdName: trimmedHousehold,
-      password,
-      createdAt: new Date().toISOString(),
-    });
-
-    setError(null);
-    setSuccessMessage(`Account created successfully for ${trimmedName}. You can log in now or continue straight to your dashboard.`);
-    persistProfile(trimmedName, "signup");
-    resetSignupFields();
-    setAuthMode("login");
+    setError("Sign up is only available for the demo user in this MVP. Please use demo@demo.com / demo to log in.");
   }
 
   function handleProviderLogin(displayName: string, provider: string) {
-    setError(null);
-    setSuccessMessage(null);
-    goToDashboard(displayName, provider);
+    setError("Social login is not enabled in this MVP.");
   }
 
   return (

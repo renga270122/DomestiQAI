@@ -43,17 +43,22 @@ function getProviderConfig(): ProviderConfig | null {
 
   if (provider === "github-models") {
     const apiKey = process.env.GITHUB_MODELS_TOKEN;
+    const model = process.env.GITHUB_MODELS_MODEL ?? "microsoft/phi-4-reasoning";
+    const baseUrl = process.env.GITHUB_MODELS_BASE_URL;
 
     if (!apiKey) {
       return null;
     }
 
+    // Use the official GitHub Models API endpoint
+    const url = baseUrl
+      ? `${baseUrl}/v1/models/${model}/chat/completions`
+      : `https://api.github.com/v1/models/${model}/chat/completions`;
+
     return {
       provider,
-      model: process.env.GITHUB_MODELS_MODEL ?? "openai/gpt-4.1-mini",
-      url:
-        process.env.GITHUB_MODELS_BASE_URL ??
-        "https://models.inference.ai.azure.com/chat/completions",
+      model,
+      url,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
@@ -182,8 +187,8 @@ function normalizeUpstreamError(status: number, errorText: string) {
     return "The assistant provider rejected the API credentials. Update the active provider token or API key.";
   }
 
-  if (status === 403 && /models:read|permission|forbidden/i.test(trimmed)) {
-    return "The GitHub Models token is missing the required models:read permission.";
+  if ((status === 401 || status === 403) && /models:read|`models` permission|models permission|permission|forbidden/i.test(trimmed)) {
+    return "The GitHub Models token is missing the required models permission. Create a token with GitHub Models access and update GITHUB_MODELS_TOKEN.";
   }
 
   if (status === 404 && /deployment|model/i.test(trimmed)) {
@@ -290,6 +295,12 @@ export async function POST(request: Request) {
     if (!upstream.ok) {
       const errorText = await upstream.text();
 
+      console.error("Assistant upstream request failed", {
+        provider: config.provider,
+        status: upstream.status,
+        details: errorText.slice(0, 500),
+      });
+
       return NextResponse.json(
         {
           error: normalizeUpstreamError(upstream.status, errorText),
@@ -329,7 +340,12 @@ export async function POST(request: Request) {
         "Cache-Control": "no-store",
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("Assistant provider request threw", {
+      provider: config.provider,
+      error,
+    });
+
     return NextResponse.json(
       { error: "Unable to reach the assistant provider right now." },
       { status: 502 },

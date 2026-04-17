@@ -72,12 +72,12 @@ function formatAssistantError(message: string) {
     return "The connected AI key has no remaining quota right now. Replace or recharge the provider key to restore live responses.";
   }
 
-  if (/rejected the API credentials|401/i.test(message)) {
-    return "The connected AI credentials were rejected. Update the active provider API key or token in the deployment settings.";
+  if (/models:read|models permission|GitHub Models token is missing the required models permission/i.test(message)) {
+    return "The GitHub Models token is missing the required models permission. Create a token with GitHub Models access, replace GITHUB_MODELS_TOKEN in Vercel, and redeploy.";
   }
 
-  if (/models:read/i.test(message)) {
-    return "The GitHub Models token needs the models:read permission before AI chat can work.";
+  if (/rejected the API credentials|401/i.test(message)) {
+    return "The connected AI credentials were rejected. Update the active provider API key or token in the deployment settings.";
   }
 
   if (/model or deployment could not be found/i.test(message)) {
