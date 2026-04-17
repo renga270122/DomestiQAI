@@ -103,6 +103,7 @@ function buildDashboardInsights(tasks: Task[], reminders: Reminder[]) {
   ];
 }
 
+
 function buildSmartNudges(tasks: Task[], reminders: Reminder[], completionRate: number) {
   const openTasks = tasks.filter((task) => !task.completed);
   const firstTask = openTasks[0];
@@ -121,6 +122,7 @@ function buildSmartNudges(tasks: Task[], reminders: Reminder[], completionRate: 
   ];
 }
 
+export function MvpDashboard() {
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
@@ -459,6 +461,10 @@ function buildSmartNudges(tasks: Task[], reminders: Reminder[], completionRate: 
           </button>
         ))}
       </div>
+
+      {selectedRoom && (
+        <RoomGuideModal room={selectedRoom} onClose={() => setSelectedRoom(null)} />
+      )}
 
       {selectedRoom && (
         <RoomGuideModal room={selectedRoom} onClose={() => setSelectedRoom(null)} />
